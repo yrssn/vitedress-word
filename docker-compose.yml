@@ -1,0 +1,52 @@
+version: "3.8"
+
+# ============================================================
+# 文档发布系统（backend + frontend）
+#
+# 使用方法:
+#   1. docker-compose up -d --build
+#   2. 前端：http://localhost:9280
+#   3. 后端 Swagger：http://localhost:8013/docs
+#
+# 后端使用 JSON 文件存储数据，无需外部数据库。
+# data/ 和 uploads/ 通过 volume 持久化。
+# ============================================================
+
+services:
+  backend:
+    build: ./backend
+    image: vitedress-word-backend:latest
+    container_name: vitedress-backend
+    restart: unless-stopped
+    environment:
+      - APP_PORT=${APP_PORT:-8013}
+      - UVICORN_WORKERS=${UVICORN_WORKERS:-2}
+    expose:
+      - "8013"
+    ports:
+      - "8013:8013"
+    volumes:
+      - backend-data:/app/data
+      - backend-uploads:/app/uploads
+    networks:
+      - app-net
+
+  frontend:
+    build: ./frontend
+    image: vitedress-word-frontend:latest
+    container_name: vitedress-frontend
+    restart: unless-stopped
+    ports:
+      - "9280:80"
+    depends_on:
+      - backend
+    networks:
+      - app-net
+
+volumes:
+  backend-data:
+  backend-uploads:
+
+networks:
+  app-net:
+    driver: bridge
