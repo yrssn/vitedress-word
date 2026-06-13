@@ -11,12 +11,6 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=1, max_length=100)
 
 
-class UserCreate(BaseModel):
-    """创建用户"""
-    username: str = Field(..., min_length=2, max_length=50, description="用户名")
-    password: str = Field(..., min_length=6, max_length=100, description="密码")
-
-
 class UserInfo(BaseModel):
     """用户信息（不含密码）"""
     id: str

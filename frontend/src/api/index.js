@@ -30,7 +30,6 @@ api.interceptors.response.use(
 
 // 认证
 export const login = (data) => api.post('/auth/login', data)
-export const register = (data) => api.post('/auth/register', data)
 
 // 文档类型管理
 export const getDocTypes = () => api.get('/doc-types')

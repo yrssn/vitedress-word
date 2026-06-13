@@ -10,12 +10,12 @@ from .models import (
     Category, CategoryCreate, CategoryUpdate,
     Document, DocumentCreate, DocumentUpdate, BatchDocumentCreate,
     DocType, DocTypeCreate, DocTypeUpdate,
-    UserLogin, UserCreate, Token, UserInfo
+    UserLogin, Token, UserInfo
 )
 from .database import db
 from .vitepress import generate_vitepress_files, DOCS_DIR
 from .auth import (
-    verify_password, get_password_hash, create_access_token, get_current_user
+    verify_password, create_access_token, get_current_user
 )
 
 app = FastAPI(
@@ -48,20 +48,6 @@ async def login(data: UserLogin):
     user = await db.get_user_by_username(data.username)
     if not user or not verify_password(data.password, user['password_hash']):
         raise HTTPException(status_code=401, detail="用户名或密码错误")
-    token = create_access_token(data={"sub": user['username']})
-    return Token(access_token=token, username=user['username'])
-
-
-@app.post("/api/auth/register", response_model=Token, tags=["认证"])
-async def register(data: UserCreate):
-    """用户注册"""
-    try:
-        user = await db.create_user({
-            'username': data.username,
-            'password_hash': get_password_hash(data.password)
-        })
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
     token = create_access_token(data={"sub": user['username']})
     return Token(access_token=token, username=user['username'])
 
