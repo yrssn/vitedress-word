@@ -147,9 +147,13 @@ async def delete_category(category_id: str, _: dict = Depends(get_current_user))
 # ========== 文档管理 ==========
 
 @app.get("/api/documents", response_model=List[Document], tags=["文档管理"])
-async def get_documents(category_id: Optional[str] = None, _: dict = Depends(get_current_user)):
-    """获取所有文档，可按分类筛选"""
-    return await db.get_documents(category_id)
+async def get_documents(
+    category_id: Optional[str] = None,
+    doc_type_id: Optional[str] = None,
+    _: dict = Depends(get_current_user)
+):
+    """获取所有文档，可按分类或文档类型筛选"""
+    return await db.get_documents(category_id, doc_type_id)
 
 
 @app.get("/api/documents/{document_id}", response_model=Document, tags=["文档管理"])
@@ -164,16 +168,19 @@ async def get_document(document_id: str, _: dict = Depends(get_current_user)):
 @app.post("/api/documents", response_model=Document, tags=["文档管理"])
 async def create_document(data: DocumentCreate, _: dict = Depends(get_current_user)):
     """创建文档"""
-    category = await db.get_category(data.category_id)
-    if not category:
-        raise HTTPException(status_code=400, detail="分类不存在")
+    if data.category_id:
+        category = await db.get_category(data.category_id)
+        if not category:
+            raise HTTPException(status_code=400, detail="分类不存在")
+    elif not data.doc_type_id:
+        raise HTTPException(status_code=400, detail="必须选择分类或文档类型")
     return await db.create_document(data.model_dump())
 
 
 @app.post("/api/documents/batch", response_model=List[Document], tags=["文档管理"])
 async def create_documents_batch(data: BatchDocumentCreate, _: dict = Depends(get_current_user)):
     """批量创建文档"""
-    category_ids = set(doc.category_id for doc in data.documents)
+    category_ids = set(doc.category_id for doc in data.documents if doc.category_id)
     for cat_id in category_ids:
         category = await db.get_category(cat_id)
         if not category:

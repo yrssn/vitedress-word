@@ -29,6 +29,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="description" label="描述" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="order" label="排序" width="80" align="center" sortable />
         <el-table-column prop="doc_count" label="文档数" width="100" align="center" />
         <el-table-column prop="updated_at" label="更新时间" width="180">
           <template #default="{ row }">
@@ -65,6 +66,9 @@
         <el-form-item label="图标" prop="icon">
           <el-input v-model="form.icon" placeholder="Element Plus图标名称，如 Document" />
         </el-form-item>
+        <el-form-item label="排序" prop="order">
+          <el-input-number v-model="form.order" :min="0" :max="9999" class="w-full" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -92,7 +96,8 @@ const form = ref({
   name: '',
   doc_type_id: '',
   description: '',
-  icon: ''
+  icon: '',
+  order: 0
 })
 
 const rules = {
@@ -119,7 +124,7 @@ const loadCategories = async () => {
 
 const openDialog = (row = null) => {
   editingId.value = row?.id || null
-  form.value = row ? { ...row } : { name: '', doc_type_id: '', description: '', icon: '' }
+  form.value = row ? { ...row } : { name: '', doc_type_id: '', description: '', icon: '', order: 0 }
   dialogVisible.value = true
 }
 
@@ -130,7 +135,7 @@ const handleSubmit = async () => {
   submitting.value = true
   try {
     if (editingId.value) {
-      await updateCategory(editingId.value, { name: form.value.name, description: form.value.description, icon: form.value.icon })
+      await updateCategory(editingId.value, { name: form.value.name, description: form.value.description, icon: form.value.icon, order: form.value.order })
       ElMessage.success('更新成功')
     } else {
       await createCategory(form.value)

@@ -64,6 +64,7 @@ class CategoryBase(BaseModel):
     doc_type_id: str = Field(..., description="所属文档类型ID")
     description: Optional[str] = Field(None, max_length=500, description="分类描述")
     icon: Optional[str] = Field(None, description="分类图标")
+    order: int = Field(default=0, description="排序")
 
 
 class CategoryCreate(CategoryBase):
@@ -76,6 +77,7 @@ class CategoryUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     icon: Optional[str] = None
+    order: Optional[int] = None
 
 
 class Category(CategoryBase):
@@ -91,7 +93,8 @@ class DocumentBase(BaseModel):
     """文档基础模型"""
     title: str = Field(..., min_length=1, max_length=200, description="文档标题")
     content: str = Field(..., description="Markdown内容")
-    category_id: str = Field(..., description="所属分类ID")
+    category_id: Optional[str] = Field(None, description="所属分类ID（可选，无分类时直接挂在文档类型下）")
+    doc_type_id: Optional[str] = Field(None, description="所属文档类型ID（无分类时必填）")
     order: int = Field(default=0, description="排序顺序")
 
 
@@ -105,6 +108,7 @@ class DocumentUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     content: Optional[str] = None
     category_id: Optional[str] = None
+    doc_type_id: Optional[str] = None
     order: Optional[int] = None
 
 

@@ -17,12 +17,12 @@
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="所属分类" prop="category_id">
+            <el-form-item label="所属位置" prop="location">
               <el-cascader
                 v-model="categoryValue"
                 :options="categoryOptions"
-                :props="{ expandTrigger: 'hover' }"
-                placeholder="请选择分类"
+                :props="{ expandTrigger: 'hover', checkStrictly: true }"
+                placeholder="选择文档类型（可选分类）"
                 class="w-full"
                 @change="onCategoryChange"
               />
@@ -70,13 +70,23 @@ const isEdit = computed(() => !!route.params.id)
 const form = ref({
   title: '',
   content: '# 文档标题\n\n开始编写您的文档内容...',
-  category_id: '',
+  category_id: null,
+  doc_type_id: null,
   order: 0
 })
 
 const rules = {
   title: [{ required: true, message: '请输入文档标题', trigger: 'blur' }],
-  category_id: [{ required: true, message: '请选择分类', trigger: 'change' }]
+  location: [{
+    validator: (rule, value, callback) => {
+      if (!categoryValue.value || categoryValue.value.length === 0) {
+        callback(new Error('请选择文档类型'))
+      } else {
+        callback()
+      }
+    },
+    trigger: 'change'
+  }]
 }
 
 const categoryOptions = computed(() => {
@@ -100,12 +110,28 @@ const categoryOptions = computed(() => {
       label: cat.name
     })
   })
+  // 包含没有分类的文档类型
+  docTypes.value.forEach(dt => {
+    if (!groups[dt.id]) {
+      groups[dt.id] = {
+        value: dt.id,
+        label: dt.name,
+        children: []
+      }
+    }
+  })
   return Object.values(groups)
 })
 
 const onCategoryChange = (value) => {
   if (value && value.length === 2) {
+    // 选了文档类型 + 分类
     form.value.category_id = value[1]
+    form.value.doc_type_id = null
+  } else if (value && value.length === 1) {
+    // 只选了文档类型（独立文档，无分类）
+    form.value.category_id = null
+    form.value.doc_type_id = value[0]
   }
 }
 
@@ -163,9 +189,13 @@ onMounted(async () => {
       const res = await getDocument(route.params.id)
       form.value = res.data
       // 设置级联选择器的值
-      const cat = categories.value.find(c => c.id === form.value.category_id)
-      if (cat) {
-        categoryValue.value = [cat.doc_type_id, cat.id]
+      if (form.value.category_id) {
+        const cat = categories.value.find(c => c.id === form.value.category_id)
+        if (cat) {
+          categoryValue.value = [cat.doc_type_id, cat.id]
+        }
+      } else if (form.value.doc_type_id) {
+        categoryValue.value = [form.value.doc_type_id]
       }
     } catch (e) {
       ElMessage.error('加载文档失败')

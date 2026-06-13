@@ -184,11 +184,14 @@ class Database:
             new_categories = [c for c in categories if c.get('doc_type_id') != doc_type_id]
             await self._write_file(CATEGORIES_FILE, new_categories)
             
-            # 删除这些分类下的所有文档
-            if cat_ids_to_delete:
-                documents = await self._read_file(DOCUMENTS_FILE)
-                new_documents = [d for d in documents if d.get('category_id') not in cat_ids_to_delete]
-                await self._write_file(DOCUMENTS_FILE, new_documents)
+            # 删除这些分类下的所有文档 + 直接挂在该类型下的独立文档
+            documents = await self._read_file(DOCUMENTS_FILE)
+            new_documents = [
+                d for d in documents
+                if d.get('category_id') not in cat_ids_to_delete
+                and d.get('doc_type_id') != doc_type_id
+            ]
+            await self._write_file(DOCUMENTS_FILE, new_documents)
             return True
     
     # ========== 分类操作 ==========
@@ -205,7 +208,7 @@ class Database:
         for cat in categories:
             cat['doc_count'] = len([d for d in documents if d.get('category_id') == cat['id']])
             cat['doc_type_name'] = doc_type_map.get(cat.get('doc_type_id'), '')
-        return categories
+        return sorted(categories, key=lambda x: x.get('order', 0))
     
     async def get_category(self, category_id: str) -> Optional[dict]:
         """获取单个分类"""
@@ -265,11 +268,13 @@ class Database:
     
     # ========== 文档操作 ==========
     
-    async def get_documents(self, category_id: Optional[str] = None) -> List[dict]:
+    async def get_documents(self, category_id: Optional[str] = None, doc_type_id: Optional[str] = None) -> List[dict]:
         """获取所有文档"""
         documents = await self._read_file(DOCUMENTS_FILE)
         if category_id:
             documents = [d for d in documents if d.get('category_id') == category_id]
+        if doc_type_id:
+            documents = [d for d in documents if d.get('doc_type_id') == doc_type_id]
         return sorted(documents, key=lambda x: x.get('order', 0))
     
     async def get_document(self, document_id: str) -> Optional[dict]:
