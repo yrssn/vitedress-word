@@ -91,7 +91,12 @@ async def generate_vitepress_files():
                     'link': f"{type_path}{cat['id']}/{doc['slug']}"
                 })
             
-            if doc_items:
+            if len(doc_items) == 1:
+                sidebar_items.append({
+                    'text': cat['name'],
+                    'link': doc_items[0]['link']
+                })
+            elif doc_items:
                 sidebar_items.append({
                     'text': cat['name'],
                     'collapsed': False,
