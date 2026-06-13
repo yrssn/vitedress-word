@@ -11,6 +11,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 DOC_TYPES_FILE = os.path.join(DATA_DIR, "doc_types.json")
 CATEGORIES_FILE = os.path.join(DATA_DIR, "categories.json")
 DOCUMENTS_FILE = os.path.join(DATA_DIR, "documents.json")
+USERS_FILE = os.path.join(DATA_DIR, "users.json")
 
 # 确保数据目录存在
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -62,7 +63,55 @@ class Database:
         if not os.path.exists(DOCUMENTS_FILE):
             with open(DOCUMENTS_FILE, 'w', encoding='utf-8') as f:
                 json.dump([], f)
+        if not os.path.exists(USERS_FILE):
+            with open(USERS_FILE, 'w', encoding='utf-8') as f:
+                json.dump([], f)
     
+    async def init_default_admin(self):
+        """首次启动时创建默认管理员账号"""
+        users = await self._read_file(USERS_FILE)
+        if not users:
+            from .auth import get_password_hash
+            now = datetime.now()
+            admin = {
+                'id': generate_id(),
+                'username': os.getenv('DEFAULT_ADMIN_USER', 'admin'),
+                'password_hash': get_password_hash(os.getenv('DEFAULT_ADMIN_PASS', 'admin123')),
+                'created_at': now,
+                'updated_at': now
+            }
+            users.append(admin)
+            await self._write_file(USERS_FILE, users)
+
+    # ========== 用户操作 ==========
+
+    async def get_user_by_username(self, username: str) -> Optional[dict]:
+        """根据用户名查找用户"""
+        users = await self._read_file(USERS_FILE)
+        for user in users:
+            if user['username'] == username:
+                return user
+        return None
+
+    async def create_user(self, data: dict) -> dict:
+        """创建用户"""
+        async with self._lock:
+            users = await self._read_file(USERS_FILE)
+            for u in users:
+                if u['username'] == data['username']:
+                    raise ValueError("用户名已存在")
+            now = datetime.now()
+            user = {
+                'id': generate_id(),
+                'username': data['username'],
+                'password_hash': data['password_hash'],
+                'created_at': now,
+                'updated_at': now
+            }
+            users.append(user)
+            await self._write_file(USERS_FILE, users)
+            return user
+
     async def _read_file(self, filepath: str) -> List[dict]:
         """读取JSON文件"""
         async with aiofiles.open(filepath, 'r', encoding='utf-8') as f:

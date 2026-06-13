@@ -4,7 +4,10 @@ import aiofiles
 from typing import List, Dict
 from .database import db
 
-DOCS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs")
+DOCS_DIR = os.getenv(
+    "DOCS_DIR",
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs")
+)
 
 
 async def generate_vitepress_files():

@@ -3,6 +3,34 @@ from typing import Optional, List
 from datetime import datetime
 
 
+# ========== 用户模型 ==========
+
+class UserLogin(BaseModel):
+    """用户登录"""
+    username: str = Field(..., min_length=1, max_length=50)
+    password: str = Field(..., min_length=1, max_length=100)
+
+
+class UserCreate(BaseModel):
+    """创建用户"""
+    username: str = Field(..., min_length=2, max_length=50, description="用户名")
+    password: str = Field(..., min_length=6, max_length=100, description="密码")
+
+
+class UserInfo(BaseModel):
+    """用户信息（不含密码）"""
+    id: str
+    username: str
+    created_at: datetime
+
+
+class Token(BaseModel):
+    """Token 响应"""
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+
+
 # ========== 文档类型模型 ==========
 
 class DocTypeBase(BaseModel):
