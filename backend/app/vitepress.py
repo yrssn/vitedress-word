@@ -106,6 +106,15 @@ async def generate_vitepress_files():
     config = {
         'title': '文档中心',
         'description': '企业文档管理系统',
+        # 上传的图片以 /uploads/ 绝对路径引用，由后端运行时提供。
+        # 构建时禁止把绝对路径资源当作模块解析，否则 Rollup 会报错。
+        'vue': {
+            'template': {
+                'transformAssetUrls': {
+                    'includeAbsolute': False
+                }
+            }
+        },
         'themeConfig': {
             'nav': nav if nav else [{'text': '首页', 'link': '/'}],
             'sidebar': sidebar,

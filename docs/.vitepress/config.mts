@@ -3,6 +3,13 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   "title": "文档中心",
   "description": "企业文档管理系统",
+  "vue": {
+    "template": {
+      "transformAssetUrls": {
+        "includeAbsolute": false
+      }
+    }
+  },
   "themeConfig": {
     "nav": [
       {
