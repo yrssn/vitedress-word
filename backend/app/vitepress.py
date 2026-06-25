@@ -5,9 +5,15 @@ import aiofiles
 from typing import List, Dict
 from .database import db
 
-DOCS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs")
+# 优先使用环境变量 DOCS_DIR（容器里设为 /app/docs，vitepress 也装在这里）；
+# 本地开发回退到相对仓库的 docs 目录。
+DOCS_DIR = os.environ.get("DOCS_DIR") or os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs"
+)
 # 上传图片的源目录（后端运行时通过 /uploads 静态挂载），与 main.py 的 UPLOAD_DIR 一致
-UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+UPLOAD_DIR = os.environ.get("UPLOAD_DIR") or os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "uploads"
+)
 
 
 def sync_uploads_to_public():
