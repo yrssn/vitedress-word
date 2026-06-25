@@ -59,7 +59,7 @@
           <el-input v-model="form.icon" placeholder="Element Plus图标名称，如 Document" />
         </el-form-item>
         <el-form-item label="排序" prop="order">
-          <el-input-number v-model="form.order" :min="0" :max="9999" />
+          <el-input-number v-model="form.order" :min="-9999" :max="9999" />
         </el-form-item>
       </el-form>
       <template #footer>

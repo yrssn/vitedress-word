@@ -30,7 +30,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="排序" prop="order">
-              <el-input-number v-model="form.order" :min="0" :max="9999" class="w-full" />
+              <el-input-number v-model="form.order" :min="-9999" :max="9999" class="w-full" />
             </el-form-item>
           </el-col>
         </el-row>
