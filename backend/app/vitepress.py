@@ -43,13 +43,16 @@ async def generate_vitepress_files():
     categories = await db.get_categories()
     documents = await db.get_documents()
     
-    # 按分类组织文档
+    # 按分类组织文档；没有分类的文档（category_id 为空）直接挂在文档类型下
     docs_by_category: Dict[str, List[dict]] = {}
+    uncategorized_by_type: Dict[str, List[dict]] = {}
     for doc in documents:
         cat_id = doc.get('category_id')
-        if cat_id not in docs_by_category:
-            docs_by_category[cat_id] = []
-        docs_by_category[cat_id].append(doc)
+        if cat_id:
+            docs_by_category.setdefault(cat_id, []).append(doc)
+        else:
+            type_id = doc.get('doc_type_id')
+            uncategorized_by_type.setdefault(type_id, []).append(doc)
     
     # 生成侧边栏配置
     sidebar = {}
@@ -72,29 +75,30 @@ async def generate_vitepress_files():
         type_label = doc_type.get('name', type_value)
         type_path = f"/{type_value}/"
         cats = cats_by_type.get(type_id, [])
+        uncategorized = uncategorized_by_type.get(type_id, [])
         
         # 创建文档类型目录
         type_dir = os.path.join(DOCS_DIR, type_value)
         os.makedirs(type_dir, exist_ok=True)
         
-        # 生成该类型的index.md
         index_content = f"# {type_label}\n\n"
-        for cat in cats:
-            index_content += f"## {cat['name']}\n\n"
-            if cat.get('description'):
-                index_content += f"{cat['description']}\n\n"
-            
-            cat_docs = docs_by_category.get(cat['id'], [])
-            for doc in sorted(cat_docs, key=lambda x: x.get('order', 0)):
-                index_content += f"- [{doc['title']}](./{cat['id']}/{doc['slug']}.md)\n"
-            index_content += "\n"
-        
-        async with aiofiles.open(os.path.join(type_dir, "index.md"), 'w', encoding='utf-8') as f:
-            await f.write(index_content)
-        
         # 侧边栏项
         sidebar_items = []
         
+        # 没有分类的文档：直接挂在文档类型下，侧边栏不再多套一层分类
+        for doc in sorted(uncategorized, key=lambda x: x.get('order', 0)):
+            doc_path = os.path.join(type_dir, f"{doc['slug']}.md")
+            async with aiofiles.open(doc_path, 'w', encoding='utf-8') as f:
+                await f.write(doc['content'])
+            index_content += f"- [{doc['title']}](./{doc['slug']}.md)\n"
+            sidebar_items.append({
+                'text': doc['title'],
+                'link': f"{type_path}{doc['slug']}"
+            })
+        if uncategorized:
+            index_content += "\n"
+        
+        # 有分类的文档：按分类分组
         for cat in cats:
             cat_dir = os.path.join(type_dir, cat['id'])
             os.makedirs(cat_dir, exist_ok=True)
@@ -102,16 +106,22 @@ async def generate_vitepress_files():
             cat_docs = docs_by_category.get(cat['id'], [])
             doc_items = []
             
+            index_content += f"## {cat['name']}\n\n"
+            if cat.get('description'):
+                index_content += f"{cat['description']}\n\n"
+            
             for doc in sorted(cat_docs, key=lambda x: x.get('order', 0)):
                 # 生成文档文件
                 doc_path = os.path.join(cat_dir, f"{doc['slug']}.md")
                 async with aiofiles.open(doc_path, 'w', encoding='utf-8') as f:
                     await f.write(doc['content'])
                 
+                index_content += f"- [{doc['title']}](./{cat['id']}/{doc['slug']}.md)\n"
                 doc_items.append({
                     'text': doc['title'],
                     'link': f"{type_path}{cat['id']}/{doc['slug']}"
                 })
+            index_content += "\n"
             
             if doc_items:
                 sidebar_items.append({
@@ -119,6 +129,9 @@ async def generate_vitepress_files():
                     'collapsed': False,
                     'items': doc_items
                 })
+        
+        async with aiofiles.open(os.path.join(type_dir, "index.md"), 'w', encoding='utf-8') as f:
+            await f.write(index_content)
         
         if sidebar_items:
             sidebar[type_path] = sidebar_items
