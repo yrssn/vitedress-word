@@ -1,10 +1,26 @@
 import os
 import json
+import shutil
 import aiofiles
 from typing import List, Dict
 from .database import db
 
 DOCS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "docs")
+# 上传图片的源目录（后端运行时通过 /uploads 静态挂载），与 main.py 的 UPLOAD_DIR 一致
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "uploads")
+
+
+def sync_uploads_to_public():
+    """把上传的图片同步到 docs/public/uploads，
+    使得 vitepress build 后静态站点也能通过 /uploads/xxx 访问到图片。"""
+    if not os.path.isdir(UPLOAD_DIR):
+        return
+    public_uploads = os.path.join(DOCS_DIR, "public", "uploads")
+    os.makedirs(public_uploads, exist_ok=True)
+    for name in os.listdir(UPLOAD_DIR):
+        src = os.path.join(UPLOAD_DIR, name)
+        if os.path.isfile(src):
+            shutil.copy2(src, os.path.join(public_uploads, name))
 
 
 async def generate_vitepress_files():
@@ -12,6 +28,9 @@ async def generate_vitepress_files():
     # 确保docs目录存在
     os.makedirs(DOCS_DIR, exist_ok=True)
     os.makedirs(os.path.join(DOCS_DIR, ".vitepress"), exist_ok=True)
+
+    # 同步上传图片到 public 目录，保证构建产物包含图片
+    sync_uploads_to_public()
     
     # 获取动态文档类型
     doc_types_list = await db.get_doc_types()
